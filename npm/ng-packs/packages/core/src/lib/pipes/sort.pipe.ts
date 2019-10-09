@@ -1,15 +1,16 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform, Injectable } from '@angular/core';
 import clone from 'just-clone';
 
 export type SortOrder = 'asc' | 'desc';
 
+@Injectable()
 @Pipe({
   name: 'abpSort',
 })
 export class SortPipe implements PipeTransform {
   intialValue: any[];
 
-  transform(value: any[], sortOrder: SortOrder = 'asc', sortKey: string): any {
+  transform(value: any[], sortOrder: SortOrder | string = 'asc', sortKey?: string): any {
     sortOrder = sortOrder && (sortOrder.toLowerCase() as any);
 
     if (!this.intialValue) this.intialValue = clone(value);

@@ -165,7 +165,8 @@ namespace Volo.Docs.Pages.Documents.Project
             {
                 projectName = ProjectName,
                 version = (LatestVersionInfo.IsSelected ? DocsAppConsts.Latest : Version),
-                languageCode = DefaultLanguageCode
+                languageCode = DefaultLanguageCode,
+                documentName = DocumentName
             });
         }
 
@@ -187,7 +188,7 @@ namespace Volo.Docs.Pages.Documents.Project
             ProjectSelectItems = projects.Items.Select(p => new SelectListItem
             {
                 Text = p.Name,
-                Value = p.Id != Project.Id ? "/" + DocumentsUrlPrefix + LanguageCode + "/" + p.ShortName + "/" + DocsAppConsts.Latest : null,
+                Value = p.Id != Project.Id ? DocumentsUrlPrefix + LanguageCode + "/" + p.ShortName + "/" + DocsAppConsts.Latest : null,
                 Selected = p.Id == Project.Id
             }).ToList();
         }
