@@ -2,7 +2,7 @@
 
 ABP框架扩展了ASP.NET Core的分布式缓存系统.
 
-## IDistributedCache 接口
+## `IDistributedCache` 接口
 
 ASP.NET Core 定义了 `IDistributedCache` 接口用于 get/set 缓存值 . 但是会有以下问题:
 
@@ -17,7 +17,7 @@ ASP.NET Core 定义了 `IDistributedCache` 接口用于 get/set 缓存值 . 但�
 
 有关更多信息, 参见 [ASP.NET Core 分布式缓存文档](https://docs.microsoft.com/zh-cn/aspnet/core/performance/caching/distributed).
 
-## IDistributedCache<TCacheItem> 接口
+## `IDistributedCache<TCacheItem>` 接口
 
 ABP框架在[Volo.Abp.Caching](https://www.nuget.org/packages/Volo.Abp.Caching/)包定义了通用的泛型 `IDistributedCache<TCacheItem>` 接口. `TCacheItem` 是存储在缓存中的对象类型.
 
@@ -79,6 +79,92 @@ public class BookService : ITransientDependency
 * `GetOrAddAsync` 有一个可选参数 `DistributedCacheEntryOptions` , 可用于设置缓存的生命周期.
 
 `IDistributedCache<BookCacheItem>` 的其他方法与ASP.NET Core的`IDistributedCache` 接口相同, 你可以参考 [ASP.NET Core文档](https://docs.microsoft.com/zh-cn/aspnet/core/performance/caching/distributed).
+
+## `IDistributedCache<TCacheItem, TCacheKey>` 接口
+
+`IDistributedCache<TCacheItem>` 接口默认了键是 `string` 类型 (如果你的键不是string类型需要进行手动类型转换). `IDistributedCache<TCacheItem, TCacheKey>` 将键的类型泛型化试图简化手动转换的操作.
+
+### 使用示例
+
+示例缓存项
+
+````csharp
+public class BookCacheItem
+{
+    public string Name { get; set; }
+
+    public float Price { get; set; }
+}
+````
+
+用法示例 (这里假设你的键类型是 `Guid`):
+
+````csharp
+public class BookService : ITransientDependency
+{
+    private readonly IDistributedCache<BookCacheItem, Guid> _cache;
+
+    public BookService(IDistributedCache<BookCacheItem, Guid> cache)
+    {
+        _cache = cache;
+    }
+
+    public async Task<BookCacheItem> GetAsync(Guid bookId)
+    {
+        return await _cache.GetOrAddAsync(
+            bookId, //Guid type used as the cache key
+            async () => await GetBookFromDatabaseAsync(bookId),
+            () => new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.Now.AddHours(1)
+            }
+        );
+    }
+    private Task<BookCacheItem> GetBookFromDatabaseAsync(Guid bookId)
+    {
+        //TODO: get from database
+    }
+}
+````
+
+* 示例服务中 `GetOrAddAsync()` 方法获取缓存的图书项.
+* 我们采用了 `Guid` 做为键,在 `_cache_GetOrAddAsync()` 方法中传入 `Guid` 类型的bookid.
+
+`IDistributedCache<TCacheItem, TCacheKey>` 在内部使用键对象的 `ToString()` 方法转换类型为string. 如果你的将复杂对象做为键,那么需要重写类的 `ToString` 方法.
+
+示例:
+
+````csharp
+public class UserInOrganizationCacheKey
+{
+    public Guid UserId { get; set; }
+ 
+    public Guid OrganizationId { get; set; }
+
+    //构建缓存key
+    public override string ToString()
+    {
+        return $"{UserId}_{OrganizationId}";
+    }
+}
+````
+
+用法示例:
+
+````csharp
+public class BookService : ITransientDependency
+{
+    private readonly IDistributedCache<UserCacheItem, UserInOrganizationCacheKey> _cache;
+
+    public BookService(
+        IDistributedCache<UserCacheItem, UserInOrganizationCacheKey> cache)
+    {
+        _cache = cache;
+    }
+
+    ...
+}
+````
 
 ### DistributedCacheOptions
 
