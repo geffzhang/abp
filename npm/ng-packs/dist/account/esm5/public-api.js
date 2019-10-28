@@ -3,7 +3,13 @@
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 export { AccountProviders, AccountModule } from './lib/account.module';
-export { ChangePasswordComponent, LoginComponent, ManageProfileComponent, RegisterComponent, PersonalSettingsComponent } from './lib/components';
+export {
+  ChangePasswordComponent,
+  LoginComponent,
+  ManageProfileComponent,
+  RegisterComponent,
+  PersonalSettingsComponent,
+} from './lib/components';
 export { ACCOUNT_ROUTES } from './lib/constants/routes';
 export { optionsFactory, ACCOUNT_OPTIONS } from './lib/tokens';
 export {} from './lib/models';
