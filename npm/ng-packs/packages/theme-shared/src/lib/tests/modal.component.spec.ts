@@ -3,7 +3,8 @@ import { createHostFactory, SpectatorHost } from '@ngneat/spectator/jest';
 import { Store } from '@ngxs/store';
 import { MessageService } from 'primeng/components/common/messageservice';
 import { ToastModule } from 'primeng/toast';
-import { ConfirmationComponent, ModalComponent, ButtonComponent } from '../components';
+import { timer } from 'rxjs';
+import { ButtonComponent, ConfirmationComponent, ModalComponent } from '../components';
 
 describe('ModalComponent', () => {
   let spectator: SpectatorHost<ModalComponent, { visible: boolean; busy: boolean; ngDirty: boolean }>;
@@ -76,18 +77,21 @@ describe('ModalComponent', () => {
     expect(disappearFn).toHaveBeenCalled();
   });
 
-  it('should open the confirmation popup and works correct', () => {
-    spectator.click('#abp-modal-close-button');
-    expect(disappearFn).not.toHaveBeenCalled();
+  it('should open the confirmation popup and works correct', done => {
+    setTimeout(() => {
+      spectator.click('#abp-modal-close-button');
+      expect(disappearFn).not.toHaveBeenCalled();
 
-    expect(spectator.query('p-toast')).toBeTruthy();
-    spectator.click('button#cancel');
-    expect(spectator.query('div.modal')).toBeTruthy();
+      expect(spectator.query('p-toast')).toBeTruthy();
+      spectator.click('button#cancel');
+      expect(spectator.query('div.modal')).toBeTruthy();
 
-    spectator.click('#abp-modal-close-button');
-    spectator.click('button#confirm');
-    expect(spectator.query('div.modal')).toBeFalsy();
-    expect(disappearFn).toHaveBeenCalled();
+      spectator.click('#abp-modal-close-button');
+      spectator.click('button#confirm');
+      expect(spectator.query('div.modal')).toBeFalsy();
+      expect(disappearFn).toHaveBeenCalled();
+      done();
+    }, 100);
   });
 
   it('should close with the abpClose', done => {
@@ -103,13 +107,13 @@ describe('ModalComponent', () => {
   it('should close with esc key', done => {
     spectator.hostComponent.ngDirty = false;
     spectator.detectChanges();
-    setTimeout(() => {
+    timer(0).subscribe(() => {
       spectator.dispatchKeyboardEvent(document.body, 'keyup', 'Escape');
-    }, 0);
-    setTimeout(() => {
+    });
+    timer(300).subscribe(() => {
       expect(spectator.component.visible).toBe(false);
       done();
-    }, 200);
+    });
   });
 
   it('should not close when busy is true', done => {

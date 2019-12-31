@@ -1,13 +1,14 @@
 import { SpectatorHost, createHostFactory } from '@ngneat/spectator/jest';
-import { ErrorComponent } from '../components/error/error.component';
+import { HttpErrorWrapperComponent } from '../components/http-error-wrapper/http-error-wrapper.component';
 import { LocalizationPipe } from '@abp/ng.core';
 import { Store } from '@ngxs/store';
 import { Renderer2, ElementRef } from '@angular/core';
+import { Subject } from 'rxjs';
 
 describe('ErrorComponent', () => {
-  let spectator: SpectatorHost<ErrorComponent>;
+  let spectator: SpectatorHost<HttpErrorWrapperComponent>;
   const createHost = createHostFactory({
-    component: ErrorComponent,
+    component: HttpErrorWrapperComponent,
     declarations: [LocalizationPipe],
     mocks: [Store],
     providers: [
@@ -16,21 +17,26 @@ describe('ErrorComponent', () => {
     ],
   });
 
-  beforeEach(() => (spectator = createHost('<abp-error></abp-error>')));
+  beforeEach(() => {
+    spectator = createHost('<abp-http-error-wrapper></abp-http-error-wrapper>');
+    spectator.component.destroy$ = new Subject();
+  });
 
   describe('#destroy', () => {
-    it('should remove the dom', () => {
-      const renderer = spectator.get(Renderer2);
-      const rendererSpy = jest.spyOn(renderer, 'removeChild');
-      spectator.component.renderer = renderer;
+    it('should be call when pressed the esc key', done => {
+      spectator.component.destroy$.subscribe(res => {
+        done();
+      });
 
-      const elementRef = spectator.get(ElementRef);
-      spectator.component.elementRef = elementRef;
-      spectator.component.host = spectator.hostComponent;
+      spectator.keyboard.pressEscape();
+    });
 
-      spectator.click('button#abp-close-button');
-      spectator.detectChanges();
-      expect(rendererSpy).toHaveBeenCalledWith(spectator.hostComponent, elementRef.nativeElement);
+    it('should be call when clicked the close button', done => {
+      spectator.component.destroy$.subscribe(res => {
+        done();
+      });
+
+      spectator.click('#abp-close-button');
     });
   });
 });

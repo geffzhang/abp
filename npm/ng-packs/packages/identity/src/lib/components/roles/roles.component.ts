@@ -1,11 +1,17 @@
 import { ABP } from '@abp/ng.core';
 import { ConfirmationService, Toaster } from '@abp/ng.theme.shared';
-import { Component, TemplateRef, ViewChild, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Select, Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
 import { finalize, pluck } from 'rxjs/operators';
-import { CreateRole, DeleteRole, GetRoleById, GetRoles, UpdateRole } from '../../actions/identity.actions';
+import {
+  CreateRole,
+  DeleteRole,
+  GetRoleById,
+  GetRoles,
+  UpdateRole,
+} from '../../actions/identity.actions';
 import { Identity } from '../../models/identity';
 import { IdentityState } from '../../states/identity.state';
 
@@ -40,16 +46,20 @@ export class RolesComponent implements OnInit {
 
   sortKey = '';
 
-  @ViewChild('modalContent', { static: false })
-  modalContent: TemplateRef<any>;
+  @ViewChild('formRef', { static: false, read: ElementRef })
+  formRef: ElementRef<HTMLFormElement>;
 
-  constructor(private confirmationService: ConfirmationService, private fb: FormBuilder, private store: Store) {}
+  constructor(
+    private confirmationService: ConfirmationService,
+    private fb: FormBuilder,
+    private store: Store,
+  ) {}
 
   ngOnInit() {
     this.get();
   }
 
-  createForm() {
+  buildForm() {
     this.form = this.fb.group({
       name: new FormControl({ value: this.selected.name || '', disabled: this.selected.isStatic }, [
         Validators.required,
@@ -61,7 +71,7 @@ export class RolesComponent implements OnInit {
   }
 
   openModal() {
-    this.createForm();
+    this.buildForm();
     this.isModalVisible = true;
   }
 
@@ -90,9 +100,10 @@ export class RolesComponent implements OnInit {
           ? new UpdateRole({ ...this.selected, ...this.form.value, id: this.selected.id })
           : new CreateRole(this.form.value),
       )
+      .pipe(finalize(() => (this.modalBusy = false)))
       .subscribe(() => {
-        this.modalBusy = false;
         this.isModalVisible = false;
+        this.get();
       });
   }
 
@@ -103,7 +114,7 @@ export class RolesComponent implements OnInit {
       })
       .subscribe((status: Toaster.Status) => {
         if (status === Toaster.Status.confirm) {
-          this.store.dispatch(new DeleteRole(id));
+          this.store.dispatch(new DeleteRole(id)).subscribe(() => this.get());
         }
       });
   }
@@ -121,5 +132,11 @@ export class RolesComponent implements OnInit {
       .dispatch(new GetRoles(this.pageQuery))
       .pipe(finalize(() => (this.loading = false)))
       .subscribe();
+  }
+
+  onClickSaveButton() {
+    this.formRef.nativeElement.dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
   }
 }

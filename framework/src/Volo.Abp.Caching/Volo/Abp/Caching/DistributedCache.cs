@@ -23,12 +23,12 @@ namespace Volo.Abp.Caching
             IDistributedCache cache,
             ICancellationTokenProvider cancellationTokenProvider,
             IDistributedCacheSerializer serializer,
-            ICurrentTenant currentTenant) : base(
+            IDistributedCacheKeyNormalizer keyNormalizer) : base(
                 distributedCacheOption: distributedCacheOption,
                 cache: cache,
                 cancellationTokenProvider: cancellationTokenProvider,
                 serializer: serializer,
-                currentTenant: currentTenant)
+                keyNormalizer: keyNormalizer)
         {
         }
 
@@ -54,7 +54,7 @@ namespace Volo.Abp.Caching
 
         protected IDistributedCacheSerializer Serializer { get; }
 
-        protected ICurrentTenant CurrentTenant { get; }
+        protected IDistributedCacheKeyNormalizer KeyNormalizer { get; }
 
         protected SemaphoreSlim SyncSemaphore { get; }
 
@@ -67,29 +67,29 @@ namespace Volo.Abp.Caching
             IDistributedCache cache,
             ICancellationTokenProvider cancellationTokenProvider,
             IDistributedCacheSerializer serializer,
-            ICurrentTenant currentTenant)
+            IDistributedCacheKeyNormalizer keyNormalizer)
         {
             _distributedCacheOption = distributedCacheOption.Value;
             Cache = cache;
             CancellationTokenProvider = cancellationTokenProvider;
             Logger = NullLogger<DistributedCache<TCacheItem, TCacheKey>>.Instance;
             Serializer = serializer;
-            CurrentTenant = currentTenant;
+            KeyNormalizer = keyNormalizer;
 
             SyncSemaphore = new SemaphoreSlim(1, 1);
 
             SetDefaultOptions();
         }
+
         protected virtual string NormalizeKey(TCacheKey key)
         {
-            var normalizedKey = "c:" + CacheName + ",k:" + _distributedCacheOption.KeyPrefix + key.ToString();
-
-            if (!IgnoreMultiTenancy && CurrentTenant.Id.HasValue)
-            {
-                normalizedKey = "t:" + CurrentTenant.Id.Value + "," + normalizedKey;
-            }
-
-            return normalizedKey;
+            return KeyNormalizer.NormalizeKey(
+                new DistributedCacheKeyNormalizeArgs(
+                    key.ToString(),
+                    CacheName,
+                    IgnoreMultiTenancy
+                )
+            );
         }
 
         protected virtual DistributedCacheEntryOptions GetDefaultCacheEntryOptions()
@@ -102,6 +102,7 @@ namespace Volo.Abp.Caching
                     return options;
                 }
             }
+
             return _distributedCacheOption.GlobalCacheEntryOptions;
         }
 
@@ -115,6 +116,7 @@ namespace Volo.Abp.Caching
             //Configure default cache entry options
             DefaultCacheOptions = GetDefaultCacheEntryOptions();
         }
+
         /// <summary>
         /// Gets a cache item with the given key. If no cache item is found for the given key then returns null.
         /// </summary>
@@ -173,7 +175,7 @@ namespace Volo.Abp.Caching
                 cachedBytes = await Cache.GetAsync(
                     NormalizeKey(key),
                     CancellationTokenProvider.FallbackToProvider(token)
-                );
+                ).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -193,6 +195,7 @@ namespace Volo.Abp.Caching
 
             return Serializer.Deserialize<TCacheItem>(cachedBytes);
         }
+
         /// <summary>
         /// Gets or Adds a cache item with the given key. If no cache item is found for the given key then adds a cache item
         /// provided by <paramref name="factory" /> delegate and returns the provided cache item.
@@ -228,6 +231,7 @@ namespace Volo.Abp.Caching
 
             return value;
         }
+
         /// <summary>
         /// Gets or Adds a cache item with the given key. If no cache item is found for the given key then adds a cache item
         /// provided by <paramref name="factory" /> delegate and returns the provided cache item.
@@ -246,26 +250,27 @@ namespace Volo.Abp.Caching
             CancellationToken token = default)
         {
             token = CancellationTokenProvider.FallbackToProvider(token);
-            var value = await GetAsync(key, hideErrors, token);
+            var value = await GetAsync(key, hideErrors, token).ConfigureAwait(false);
             if (value != null)
             {
                 return value;
             }
 
-            using (await SyncSemaphore.LockAsync(token))
+            using (await SyncSemaphore.LockAsync(token).ConfigureAwait(false))
             {
-                value = await GetAsync(key, hideErrors, token);
+                value = await GetAsync(key, hideErrors, token).ConfigureAwait(false);
                 if (value != null)
                 {
                     return value;
                 }
 
-                value = await factory();
-                await SetAsync(key, value, optionsFactory?.Invoke(), hideErrors, token);
+                value = await factory().ConfigureAwait(false);
+                await SetAsync(key, value, optionsFactory?.Invoke(), hideErrors, token).ConfigureAwait(false);
             }
 
             return value;
         }
+
         /// <summary>
         /// Sets the cache item value for the provided key.
         /// </summary>
@@ -300,6 +305,7 @@ namespace Volo.Abp.Caching
                 throw;
             }
         }
+
         /// <summary>
         /// Sets the cache item value for the provided key.
         /// </summary>
@@ -325,7 +331,7 @@ namespace Volo.Abp.Caching
                     Serializer.Serialize(value),
                     options ?? DefaultCacheOptions,
                     CancellationTokenProvider.FallbackToProvider(token)
-                );
+                ).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -338,6 +344,7 @@ namespace Volo.Abp.Caching
                 throw;
             }
         }
+
         /// <summary>
         /// Refreshes the cache value of the given key, and resets its sliding expiration timeout.
         /// </summary>
@@ -380,7 +387,7 @@ namespace Volo.Abp.Caching
 
             try
             {
-                await Cache.RefreshAsync(NormalizeKey(key), CancellationTokenProvider.FallbackToProvider(token));
+                await Cache.RefreshAsync(NormalizeKey(key), CancellationTokenProvider.FallbackToProvider(token)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -393,6 +400,7 @@ namespace Volo.Abp.Caching
                 throw;
             }
         }
+
         /// <summary>
         /// Removes the cache item for given key from cache.
         /// </summary>
@@ -418,6 +426,7 @@ namespace Volo.Abp.Caching
                 throw;
             }
         }
+
         /// <summary>
         /// Removes the cache item for given key from cache.
         /// </summary>
@@ -434,7 +443,7 @@ namespace Volo.Abp.Caching
 
             try
             {
-                await Cache.RemoveAsync(NormalizeKey(key), CancellationTokenProvider.FallbackToProvider(token));
+                await Cache.RemoveAsync(NormalizeKey(key), CancellationTokenProvider.FallbackToProvider(token)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -447,7 +456,5 @@ namespace Volo.Abp.Caching
                 throw;
             }
         }
-
     }
-
 }
