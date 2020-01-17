@@ -87,7 +87,14 @@
           "path": "Exception-Handling.md"
         },
         {
-          "text": "Validation"
+          "text": "Validation",
+          "path": "Validation.md",
+          "items": [
+            {
+              "text": "FluentValidation Integration",
+              "path": "FluentValidation.md"
+            }
+          ]
         },
         {
           "text": "Authorization",
@@ -98,7 +105,8 @@
           "path": "Caching.md"
         },
         {
-          "text": "Auditing"
+          "text": "Audit Logging",
+          "path": "Audit-Logging.md"
         },
         {
           "text": "Settings",
