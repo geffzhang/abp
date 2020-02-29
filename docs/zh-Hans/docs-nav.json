@@ -29,6 +29,7 @@
     },
     {
       "text": "教程",
+      "path": "Tutorials/Index.md",
       "items": [
         {
           "text": "应用开发",
@@ -51,6 +52,10 @@
         {
           "text": "配置",
           "path": "Configuration.md"
+        },
+        {
+          "text": "选项",
+          "path": "Options.md"
         },
         {
           "text": "依赖注入",
@@ -85,15 +90,21 @@
           ]
         },
         {
-          "text": "授权"
+          "text": "授权",
+          "path": "Authorization.md"
         },
         {
           "text": "缓存",
           "path": "Caching.md"
         },
         {
-          "text": "审计"
-        }, 
+          "text": "日志",
+          "path": "Logging.md"
+        },
+        {
+          "text": "审计日志",
+          "path": "Audit-Logging.md"
+        },
         {
           "text": "设置管理",
           "path": "Settings.md"
@@ -256,22 +267,45 @@
       "path":"Data-Access.md",
       "items": [
         {
-          "text": "Entity Framework Core 集成",
-          "path": "Entity-Framework-Core.md",
-          "items": [            
+          "text": "连接字符串",
+          "path": "Connection-Strings.md"
+        },
+        {
+          "text": "数据库提供程序",
+          "items": [
             {
-              "text": "PostgreSQL 集成",
-              "path": "Entity-Framework-Core-PostgreSQL.md"
+              "text": "Entity Framework Core",
+              "path": "Entity-Framework-Core.md",
+              "items": [
+                {
+                  "text": "切换DMBS",
+                  "path": "Entity-Framework-Core-Other-DBMS.md",
+                  "items":[
+                    {
+                      "text": "到MySql",
+                      "path": "Entity-Framework-Core-MySQL.md"
+                    },
+                    {
+                      "text": "到PostgreSQL",
+                      "path": "Entity-Framework-Core-PostgreSQL.md"
+                    },
+                    {
+                      "text": "到SQLite",
+                      "path": "Entity-Framework-Core-SQLite.md"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "MongoDB",
+              "path": "MongoDB.md"
+            },
+            {
+              "text": "Dapper",
+              "path": "Dapper.md"
             }
           ]
-        },
-        {
-          "text": "MongoDB 集成",
-          "path": "MongoDB.md"
-        },
-        {
-          "text": "Dapper 集成",
-          "path": "Dapper.md"
         }
       ]
     },

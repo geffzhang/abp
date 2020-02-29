@@ -51,9 +51,9 @@ namespace Volo.Abp.Cli.ProjectBuilding
                 args.TemplateName,
                 SourceCodeTypes.Template,
                 args.Version
-            ).ConfigureAwait(false);
+            );
              
-            var apiKeyResult = await ApiKeyService.GetApiKeyOrNullAsync().ConfigureAwait(false);
+            var apiKeyResult = await ApiKeyService.GetApiKeyOrNullAsync();
             if (apiKeyResult?.ApiKey != null)
             {
                 args.ExtraProperties["api-key"] = apiKeyResult.ApiKey;
@@ -88,6 +88,8 @@ namespace Volo.Abp.Cli.ProjectBuilding
                             !x.Key.Equals(NewCommand.Options.OutputFolder.Short, StringComparison.InvariantCultureIgnoreCase))
                 .Where(x => !x.Key.Equals(NewCommand.Options.UiFramework.Long, StringComparison.InvariantCultureIgnoreCase) &&
                             !x.Key.Equals(NewCommand.Options.UiFramework.Short, StringComparison.InvariantCultureIgnoreCase))
+                .Where(x => !x.Key.Equals(NewCommand.Options.Mobile.Long, StringComparison.InvariantCultureIgnoreCase) &&
+                            !x.Key.Equals(NewCommand.Options.Mobile.Short, StringComparison.InvariantCultureIgnoreCase))
                 .Where(x => !x.Key.Equals(NewCommand.Options.Version.Long, StringComparison.InvariantCultureIgnoreCase) &&
                             !x.Key.Equals(NewCommand.Options.Version.Short, StringComparison.InvariantCultureIgnoreCase))
                 .Select(x => x.Key).ToList();
@@ -103,7 +105,7 @@ namespace Volo.Abp.Cli.ProjectBuilding
                 ProjectName = args.SolutionName.FullName,
                 TemplateName = args.TemplateName,
                 TemplateVersion = templateFile.Version
-            }).ConfigureAwait(false);
+            });
 
             return new ProjectBuildResult(context.Result.ZipContent, args.SolutionName.ProjectName);
         }

@@ -1,9 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp.Account.Settings;
+using Volo.Abp.Auditing;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Identity;
 using Volo.Abp.Settings;
@@ -32,7 +33,7 @@ namespace Volo.Abp.Account.Web.Pages.Account
 
         public virtual async Task OnGetAsync()
         {
-            await CheckSelfRegistrationAsync().ConfigureAwait(false);
+            await CheckSelfRegistrationAsync();
         }
 
         [UnitOfWork] //TODO: Will be removed when we implement action filter
@@ -40,7 +41,7 @@ namespace Volo.Abp.Account.Web.Pages.Account
         {
             ValidateModel();
 
-            await CheckSelfRegistrationAsync().ConfigureAwait(false);
+            await CheckSelfRegistrationAsync();
 
             var registerDto = new RegisterDto
             {
@@ -53,15 +54,17 @@ namespace Volo.Abp.Account.Web.Pages.Account
             var userDto = await _accountAppService.RegisterAsync(registerDto);
             var user = await UserManager.GetByIdAsync(userDto.Id);
 
-            await SignInManager.SignInAsync(user, isPersistent: false).ConfigureAwait(false);
+            await UserManager.SetEmailAsync(user, Input.EmailAddress);
+
+            await SignInManager.SignInAsync(user, isPersistent: false);
 
             return Redirect(ReturnUrl ?? "/"); //TODO: How to ensure safety? IdentityServer requires it however it should be checked somehow!
         }
 
         protected virtual async Task CheckSelfRegistrationAsync()
         {
-            if (!await SettingProvider.IsTrueAsync(AccountSettingNames.IsSelfRegistrationEnabled).ConfigureAwait(false) ||
-                !await SettingProvider.IsTrueAsync(AccountSettingNames.EnableLocalLogin).ConfigureAwait(false))
+            if (!await SettingProvider.IsTrueAsync(AccountSettingNames.IsSelfRegistrationEnabled) ||
+                !await SettingProvider.IsTrueAsync(AccountSettingNames.EnableLocalLogin))
             {
                 throw new UserFriendlyException(L["SelfRegistrationDisabledMessage"]);
             }
@@ -81,6 +84,7 @@ namespace Volo.Abp.Account.Web.Pages.Account
             [Required]
             [StringLength(IdentityUserConsts.MaxPasswordLength)]
             [DataType(DataType.Password)]
+            [DisableAuditing]
             public string Password { get; set; }
         }
     }

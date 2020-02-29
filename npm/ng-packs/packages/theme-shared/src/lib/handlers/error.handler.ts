@@ -190,8 +190,8 @@ export class ErrorHandler {
       if (body.details) {
         message = body.details;
         title = body.message;
-      } else if (body.code) {
-        title = body.code;
+      } else if (body.message) {
+        title = DEFAULT_ERROR_MESSAGES.defaultError.title;
         message = body.message;
       } else {
         message = body.message || DEFAULT_ERROR_MESSAGES.defaultError.title;
@@ -220,11 +220,12 @@ export class ErrorHandler {
       .resolveComponentFactory(HttpErrorWrapperComponent)
       .create(this.injector);
 
-    for (const key in this.componentRef.instance) {
+    for (const key in instance) {
       if (this.componentRef.instance.hasOwnProperty(key)) {
         this.componentRef.instance[key] = instance[key];
       }
     }
+
     this.componentRef.instance.hideCloseIcon = this.httpErrorConfig.errorScreen.hideCloseIcon;
     if (this.canCreateCustomError(instance.status as ErrorScreenErrorCodes)) {
       this.componentRef.instance.cfRes = this.cfRes;

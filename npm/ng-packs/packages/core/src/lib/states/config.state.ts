@@ -2,18 +2,25 @@ import { Action, createSelector, Selector, State, StateContext, Store } from '@n
 import { of } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 import snq from 'snq';
-import { GetAppConfiguration, PatchRouteByName, AddRoute } from '../actions/config.actions';
+import {
+  GetAppConfiguration,
+  PatchRouteByName,
+  AddRoute,
+  SetEnvironment,
+} from '../actions/config.actions';
 import { SetLanguage } from '../actions/session.actions';
 import { ABP } from '../models/common';
 import { Config } from '../models/config';
 import { ApplicationConfigurationService } from '../services/application-configuration.service';
 import { organizeRoutes } from '../utils/route-utils';
 import { SessionState } from './session.state';
+import { Injectable } from '@angular/core';
 
 @State<Config.State>({
   name: 'ConfigState',
   defaults: {} as Config.State,
 })
+@Injectable()
 export class ConfigState {
   @Selector()
   static getAll(state: Config.State) {
@@ -289,6 +296,13 @@ export class ConfigState {
     return patchState({
       routes,
       flattedRoutes,
+    });
+  }
+
+  @Action(SetEnvironment)
+  setEnvironment({ patchState }: StateContext<Config.State>, environment: Config.Environment) {
+    return patchState({
+      environment,
     });
   }
 }
