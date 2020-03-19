@@ -48,7 +48,10 @@ abp new Acme.BookStore
         * `--separate-identity-server`: Separates the identity server application from the API host application. If not specified, you will have a single endpoint in the server side.
       * `none`: Without UI. There are some additional options for this template:
         * `--separate-identity-server`: Separates the identity server application from the API host application. If not specified, you will have a single endpoint in the server side.
-    * `--database-provider` or `-d`: Specifies the database provider. Default provider is `ef`. Available providers:
+    * `--mobile` or `-m`: Specifies the mobile application framework. Default framework is `react-native`. Available frameworks:
+      * `none`: no mobile application.
+      * `react-native`: React Native.
+	* `--database-provider` or `-d`: Specifies the database provider. Default provider is `ef`. Available providers:
       * `ef`: Entity Framework Core.
       * `mongodb`: MongoDB.
   * `module`: [Module template](Startup-Templates/Module.md). Additional options:
@@ -56,6 +59,7 @@ abp new Acme.BookStore
 * `--output-folder` or `-o`: Specifies the output folder. Default value is the current directory.
 * `--version` or `-v`: Specifies the ABP & template version. It can be a [release tag](https://github.com/abpframework/abp/releases) or a [branch name](https://github.com/abpframework/abp/branches). Uses the latest release if not specified. Most of the times, you will want to use the latest version.
 * `--template-source` or `-ts`: Specifies a custom template source to use to build the project. Local and network sources can be used(Like `D\localTemplate` or `https://<your url>.zip`).
+* `--create-solution-folder` or `-csf`: Specifies if the project will be in a new folder in the output folder or directly the output folder.
 
 ### add-package
 
@@ -109,6 +113,7 @@ abp add-module Volo.Blogging
 * `--solution` or `-s`: Specifies the solution (.sln) file path. If not specified, CLI tries to find a .sln file in the current directory.
 * `--skip-db-migrations`: For EF Core database provider, it automatically adds a new code first migration (`Add-Migration`) and updates the database (`Update-Database`) if necessary. Specify this option to skip this operation.
 * `-sp` or `--startup-project`: Relative path to the project folder of the startup project. Default value is the current folder.
+* `--with-source-code`: Add source code of the module instead of NuGet/NPM packages.
 
 ### update
 
@@ -140,7 +145,7 @@ abp switch-to-preview [options]
 ````
 #### Options
 
-`--solution-path` or `-sp`: Specifies the solution (.sln) file path. If not specified, CLI tries to find a .sln file in the current directory.
+`--solution-directory` or `-sd`: Specifies the directory. The solution should be in that directory or in any of its sub directories. If not specified, default is the current directory.
 
 ### switch-to-stable
 
@@ -153,7 +158,7 @@ abp switch-to-stable [options]
 ````
 #### Options
 
-`--solution-path` or `-sp`: Specifies the solution (.sln) file path. If not specified, CLI tries to find a .sln file in the current directory.
+`--solution-directory` or `-sd`: Specifies the directory. The solution should be in that directory or in any of its sub directories. If not specified, default is the current directory.
 
 ### login
 
