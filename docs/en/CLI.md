@@ -22,7 +22,7 @@ dotnet tool update -g Volo.Abp.Cli
 
 Generates a new solution based on the ABP [startup templates](Startup-Templates/Index.md).
 
-Basic usage:
+Usage:
 
 ````bash
 abp new <solution-name> [options]
@@ -94,7 +94,7 @@ Adds a [multi-package application module](Modules/Index) to a solution by findin
 
 > A business module generally consists of several packages (because of layering, different database provider options or other reasons). Using `add-module` command dramatically simplifies adding a module to a solution. However, each module may require some additional configurations which is generally indicated in the documentation of the related module.
 
-Basic usage:
+Usage
 
 ````bash
 abp add-module <module-name> [options]
@@ -177,6 +177,29 @@ Logs you out by removing the session token from your computer.
 ```
 abp logout
 ```
+
+### generate-proxy
+
+Generates client proxies for your HTTP APIs to make easy to consume your services from the client side. Before running `generate-proxy` command, your host must be up and running.
+
+Usage:
+
+````bash
+abp generate-proxy [options] 
+````
+
+#### Options
+
+* `--apiUrl` or `-a`: Specifies the root URL of the HTTP API. The default value is being retrieved from the `environment.ts` file for the Angular application. Make sure your host is up and running before running `abp generate-proxy`.
+* `--ui` or `-u`: Specifies the UI framework. Default value is `angular` and it is the only UI framework supported for now. Creates TypeScript code.
+* `--module` or `-m`: Specifies the module name. Default module name is `app`, which indicates your own application (you typically want this since every module is responsible to maintain its own client proxies). Set `all` for to generate proxies for all the modules.
+
+Example usage with the options:
+
+````bash
+abp generate-proxy --apiUrl https://localhost:44305 --ui angular --module all
+````
+
 
 ### help
 
