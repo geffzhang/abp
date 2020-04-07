@@ -5,6 +5,7 @@
       "items": [
         {
           "text": "From Startup Templates",
+          "path": "Getting-Started-With-Startup-Templates.md",
           "items": [
             {
               "text": "Application with MVC (Razor Pages) UI",
@@ -73,6 +74,10 @@
               "path": "Customizing-Application-Modules-Overriding-User-Interface.md"
             }
           ]
+        },
+        {
+          "text": "\"How to\" Guides",
+          "path": "How-To/Index.md"
         },
         {
           "text": "Migrating from the ASP.NET Boilerplate",
@@ -302,12 +307,24 @@
             {
               "text": "Theming",
               "path": "UI/AspNetCore/Theming.md"
+            },
+            {
+              "text": "Customize/Extend the UI",
+              "path": "UI/AspNetCore/Customization-User-Interface.md"
             }
           ]
         },
         {
           "text": "Angular",
           "items": [
+            {
+              "text": "Service Proxies",
+              "path": "UI/Angular/Service-Proxies.md"
+            },
+            {
+              "text": "HTTP Requests",
+              "path": "UI/Angular/HTTP-Requests.md"
+            },
             {
               "text": "Localization",
               "path": "UI/Angular/Localization.md"
@@ -327,6 +344,23 @@
             {
               "text": "Custom Setting Page",
               "path": "UI/Angular/Custom-Setting-Page.md"
+            },
+            {
+              "text": "Lazy Loading Scripts & Styles",
+              "path": "UI/Angular/Lazy-Load-Service.md"
+            },
+            {
+              "text": "TrackByService",
+              "path": "UI/Angular/Track-By-Service.md"
+            }
+          ]
+        },
+        {
+          "text": "Common",
+          "items": [
+            {
+              "text": "Linked List (Doubly)",
+              "path": "UI/Common/Utils/Linked-List.md"
             }
           ]
         }
