@@ -193,8 +193,6 @@ var people = ((IMongoQueryable<Person>)_personRepository
 
 ### 选项-3: IAsyncQueryableExecuter
 
-> 注意,此功能在ABP框架3.0以之后的版本可用,虽然它也可以用于较早的版本,但它提供的方法非常有限.
-
 `IAsyncQueryableExecuter` 是一个用于异步执行 `IQueryable<T>` 对象的服务,**不依赖于实际的数据库提供程序**.
 
 **示例: 注入并使用 `IAsyncQueryableExecuter.ToListAsync()` 方法**
@@ -247,7 +245,5 @@ ABP框架使用实际数据库提供程序的API异步执行查询.虽然这不�
 此方法建议;
 
 * 如果你正在构建一个没有数据库提供程序集成包的**可重用库**,但是在某些情况下需要执行 `IQueryable<T>`对象.
-
-For example, ABP Framework uses the `IAsyncQueryableExecuter` in the `CrudAppService` base class (see the [application services](Application-Services.md) document).
 
 例如,ABP框架在 `CrudAppService` 基类中(参阅[应用程序](Application-Services.md)文档)使用 `IAsyncQueryableExecuter`.

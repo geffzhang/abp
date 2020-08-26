@@ -158,7 +158,7 @@ namespace Volo.Abp.Cli
                     return await NuGetService.GetLatestVersionOrNullAsync("Volo.Abp.Cli");
 
                 case UpdateChannel.Prerelease:
-                    return await NuGetService.GetLatestVersionOrNullAsync("Volo.Abp.Cli", includePreviews: true);
+                    return await NuGetService.GetLatestVersionOrNullAsync("Volo.Abp.Cli", includeReleaseCandidates: true);
 
                 case UpdateChannel.Nightly:
                     return await NuGetService.GetLatestVersionOrNullAsync("Volo.Abp.Cli", includeNightly: true);
@@ -190,8 +190,7 @@ namespace Volo.Abp.Cli
                     break;
 
                 case UpdateChannel.Prerelease:
-                    Logger.LogWarning($"dotnet tool uninstall {toolPathArg} Volo.Abp.Cli");
-                    Logger.LogWarning($"dotnet tool install {toolPathArg} Volo.Abp.Cli --version {latestVersion}");
+                    Logger.LogWarning($"dotnet tool update {toolPathArg} Volo.Abp.Cli --version {latestVersion}");
                     break;
 
                 case UpdateChannel.Nightly:
