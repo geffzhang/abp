@@ -1,0 +1,62 @@
+﻿@page "/role-management"
+@attribute [Authorize]
+@using Volo.Abp.Identity
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using Volo.Abp.Application.Dtos
+@using Volo.Abp.Identity.Localization
+@inject IIdentityRoleAppService RoleAppService
+@inject IStringLocalizer<IdentityResource> L
+
+<h1>@L["Roles"]</h1>
+
+@if (_roles != null)
+{
+    <ul class="mt-2">
+        @foreach (var role in _roles.Items)
+        {
+            <li>
+                @role.Id / <strong>@role.Name</strong>
+                <AuthorizeView Policy="@IdentityPermissions.Roles.Delete">
+                    (<button class="btn btn-secondary btn-sm" @onclick="() => DeleteRoleAsync(role.Id)">Delete</button>)
+                </AuthorizeView>
+            </li>
+        }
+    </ul>
+    <p>Total role count: @_roles.TotalCount</p>
+}
+
+<h2>New Role</h2>
+
+<label>Name:</label>
+<input type="text" name="RoleName" @bind="_newRole.Name" />
+<button class="btn btn-primary" @onclick="CreateRoleAsync">Create!</button>
+
+@code {
+    private IdentityRoleCreateDto _newRole = new IdentityRoleCreateDto();
+
+    PagedResultDto<IdentityRoleDto> _roles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetRolesAsync();
+    }
+
+    private async Task GetRolesAsync()
+    {
+        _roles = await RoleAppService.GetListAsync(new PagedAndSortedResultRequestDto());
+    }
+
+    private async Task CreateRoleAsync()
+    {
+        await RoleAppService.CreateAsync(_newRole);
+        _newRole = new IdentityRoleCreateDto();
+        await GetRolesAsync();
+    }
+
+    private async Task DeleteRoleAsync(Guid id)
+    {
+        await RoleAppService.DeleteAsync(id);
+        await GetRolesAsync();
+    }
+}
