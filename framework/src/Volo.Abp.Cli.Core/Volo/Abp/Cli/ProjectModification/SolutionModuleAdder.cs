@@ -68,7 +68,8 @@ namespace Volo.Abp.Cli.ProjectModification
             string startupProject,
             string version,
             bool skipDbMigrations = false,
-            bool withSourceCode = false)
+            bool withSourceCode = false,
+            bool addSourceCodeToSolutionFile = false)
         {
             Check.NotNull(solutionFile, nameof(solutionFile));
             Check.NotNull(moduleName, nameof(moduleName));
@@ -85,16 +86,44 @@ namespace Volo.Abp.Cli.ProjectModification
             {
                 var modulesFolderInSolution = Path.Combine(Path.GetDirectoryName(solutionFile), "modules");
                 await DownloadSourceCodesToSolutionFolder(module, modulesFolderInSolution, version);
-                await SolutionFileModifier.AddModuleToSolutionFileAsync(module, solutionFile);
-                await NugetPackageToLocalReferenceConverter.Convert(module, solutionFile);
 
-                await HandleAngularProject(modulesFolderInSolution, solutionFile);
+                if (addSourceCodeToSolutionFile)
+                {
+                    await SolutionFileModifier.AddModuleToSolutionFileAsync(module, solutionFile);
+                }
+
+                await NugetPackageToLocalReferenceConverter.Convert(module, solutionFile);
+                await AddAngularSourceCode(modulesFolderInSolution, solutionFile);
+            }
+            else
+            {
+                await AddAngularPackages(solutionFile, module);
             }
 
             ModifyDbContext(projectFiles, module, startupProject, skipDbMigrations);
         }
 
-        private async Task HandleAngularProject(string modulesFolderInSolution, string solutionFilePath)
+        private async Task AddAngularPackages(string solutionFilePath, ModuleWithMastersInfo module)
+        {
+            var angularPath = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(solutionFilePath)), "angular");
+
+            if (!Directory.Exists(angularPath))
+            {
+                return;
+            }
+
+            var angularPackages = module.NpmPackages?.Where(p => p.ApplicationType.HasFlag(NpmApplicationType.Angular)).ToList();
+
+            if (!angularPackages.IsNullOrEmpty())
+            {
+                foreach (var npmPackage in angularPackages)
+                {
+                    await ProjectNpmPackageAdder.AddAsync(angularPath, npmPackage, true);
+                }
+            }
+        }
+
+        private async Task AddAngularSourceCode(string modulesFolderInSolution, string solutionFilePath)
         {
             var angularPath = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(solutionFilePath)), "angular");
 
