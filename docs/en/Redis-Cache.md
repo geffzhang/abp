@@ -25,9 +25,11 @@ Volo.Abp.Caching.StackExchangeRedis package automatically gets the redis [config
 
 ````js
 "Redis": { 
+ "IsEnabled": "true",
  "Configuration": "127.0.0.1"
 }
 ````
+The setting `IsEnabled` is optional and will be considered `true` if it is not set.
 
 Alternatively you can configure the standard [RedisCacheOptions](https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.caching.stackexchangeredis.rediscacheoptions) [options](Options.md) class in the `ConfigureServices` method of your [module](Module-Development-Basics.md):
 
@@ -37,3 +39,7 @@ Configure<RedisCacheOptions>(options =>
     //...
 });
 ````
+
+## See Also
+
+* [Caching](Caching.md)
