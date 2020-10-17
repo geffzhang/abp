@@ -95,3 +95,25 @@ namespace MyCompanyName.MyProjectName.Controllers
     }
 }
 ```
+
+### Angular UI
+
+Angular supports CSRF Token out of box, but the token header name is `X-XSRF-TOKEN`. Since ABP Framework follows the ASP.NET Core conventions, it changes this value to `RequestVerificationToken` in the core package. 
+
+You don't need to make anything unless you need to change the `AntiforgeryOptions.HeaderName` as explained before. If you change it, remember to change the header name for the Angular application too. To do that, add an import declaration for the `HttpClientXsrfModule` into your root module.
+
+**Example: Change the header name to *MyCustomHeaderName***
+
+```typescript
+@NgModule({
+  // ...
+  imports: [
+    //...
+    HttpClientXsrfModule.withOptions({
+      cookieName: 'XSRF-TOKEN',
+      headerName: 'MyCustomHeaderName'
+    })
+  ],
+})
+export class AppModule {}
+```
