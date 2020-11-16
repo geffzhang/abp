@@ -1038,7 +1038,7 @@ namespace Acme.BookStore.Blazor.Pages
             EditingAuthor = new UpdateAuthorDto();
         }
 
-        protected override async Task OnInitializedAsync()
+        protected async override Task OnInitializedAsync()
         {
             await SetPermissionsAsync();
             await GetAuthorsAsync();
@@ -1176,6 +1176,20 @@ We should complete the localizations we've used above. Open the `en.json` file u
 "BirthDate": "Birth date",
 "NewAuthor": "New author"
 ````
+
+### Run the Application
+
+Run and login to the application. **If you don't see the Authors menu item under the Book Store menu, that means you don't have the permission yet.** Go to the `identity/roles` page, click to the *Actions* button and select the *Permissions* action for the **admin role**:
+
+![bookstore-author-permissions](images/bookstore-author-permissions.png)
+
+As you see, the admin role has no *Author Management* permissions yet. Click to the checkboxes and save the modal to grant the necessary permissions. You will see the *Authors* menu item under the *Book Store* in the main menu, after **refreshing the page**:
+
+![bookstore-authors-page](images/bookstore-authors-blazor-ui.png)
+
+That's all! This is a fully working CRUD page, you can create, edit and delete the authors.
+
+> **Tip**: If you run the `.DbMigrator` console application after defining a new permission, it automatically grants these new permissions to the admin role and you don't need to manually grant the permissions yourself.
 
 {{end}}
 

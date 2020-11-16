@@ -31,6 +31,7 @@ $projects = (
     "framework/src/Volo.Abp.AspNetCore.Authentication.OAuth",
     "framework/src/Volo.Abp.AspNetCore.Authentication.OpenIdConnect",
     "framework/src/Volo.Abp.AspNetCore",
+    "framework/src/Volo.Abp.AspNetCore.Components",
     "framework/src/Volo.Abp.AspNetCore.Components.WebAssembly",
     "framework/src/Volo.Abp.AspNetCore.Components.WebAssembly.Theming",
     "framework/src/Volo.Abp.AspNetCore.Components.WebAssembly.BasicTheme",
@@ -136,6 +137,7 @@ $projects = (
     "framework/src/Volo.Abp.Validation",
     "framework/src/Volo.Abp.VirtualFileSystem",
     "framework/src/Volo.Abp.Kafka",
+    "framework/src/Volo.Abp.Swashbuckle",
 
     # modules/account
     "modules/account/src/Volo.Abp.Account.Application.Contracts",
@@ -241,6 +243,7 @@ $projects = (
     "modules/permission-management/src/Volo.Abp.PermissionManagement.Blazor",
 
     # modules/setting-management
+    "modules/setting-management/src/Volo.Abp.SettingManagement.Blazor",
     "modules/setting-management/src/Volo.Abp.SettingManagement.Domain",
     "modules/setting-management/src/Volo.Abp.SettingManagement.Domain.Shared",
     "modules/setting-management/src/Volo.Abp.SettingManagement.EntityFrameworkCore",
@@ -250,6 +253,7 @@ $projects = (
     # modules/tenant-management
     "modules/tenant-management/src/Volo.Abp.TenantManagement.Application.Contracts",
     "modules/tenant-management/src/Volo.Abp.TenantManagement.Application",
+    "modules/tenant-management/src/Volo.Abp.TenantManagement.Blazor",
     "modules/tenant-management/src/Volo.Abp.TenantManagement.Domain",
     "modules/tenant-management/src/Volo.Abp.TenantManagement.Domain.Shared",
     "modules/tenant-management/src/Volo.Abp.TenantManagement.EntityFrameworkCore",
