@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Mvc.Diagnostics;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
@@ -85,6 +86,14 @@ namespace Volo.Abp.AspNetCore.Mvc.UI.Bootstrap.TagHelpers.Form
             {
                 selectTagHelper.Items = GetSelectItems(context, output);
             }
+            else if(!TagHelper.AutocompleteSelectedItemName.IsNullOrEmpty())
+            {
+                selectTagHelper.Items = new[]
+                {
+                    new SelectListItem(TagHelper.AutocompleteSelectedItemName,
+                        TagHelper.AutocompleteSelectedItemValue, false)
+                };
+            }
 
             var selectTagHelperOutput = await selectTagHelper.ProcessAndGetOutputAsync(GetInputAttributes(context, output), context, "select", TagMode.StartTagAndEndTag);
 
@@ -107,6 +116,8 @@ namespace Volo.Abp.AspNetCore.Mvc.UI.Bootstrap.TagHelpers.Form
                 output.Attributes.Add("data-autocomplete-display-property", TagHelper.AutocompleteDisplayPropertyName);
                 output.Attributes.Add("data-autocomplete-value-property", TagHelper.AutocompleteValuePropertyName);
                 output.Attributes.Add("data-autocomplete-filter-param-name", TagHelper.AutocompleteFilterParamName);
+                output.Attributes.Add("data-autocomplete-selected-item-name", TagHelper.AutocompleteSelectedItemName);
+                output.Attributes.Add("data-autocomplete-selected-item-value", TagHelper.AutocompleteSelectedItemValue);
             }
         }
 
@@ -158,7 +169,7 @@ namespace Volo.Abp.AspNetCore.Mvc.UI.Bootstrap.TagHelpers.Form
             {
                 var label = new TagBuilder("label");
                 label.Attributes.Add("for", GetIdAttributeValue(selectTag));
-                label.InnerHtml.Append(TagHelper.Label);
+                label.InnerHtml.AppendHtml(TagHelper.Label);
 
                 return label.ToHtmlString() + GetRequiredSymbol(context, output);
             }
@@ -222,6 +233,7 @@ namespace Volo.Abp.AspNetCore.Mvc.UI.Bootstrap.TagHelpers.Form
             var small = new TagBuilder("small");
             small.Attributes.Add("id", idAttr?.Value?.ToString() + "InfoText");
             small.AddCssClass("form-text text-muted");
+            small.InnerHtml.Append(localizedText);
 
             return small.ToHtmlString();
         }

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
-using Nito.AsyncEx;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Localization;
 using Volo.Abp.Settings;
@@ -33,21 +32,11 @@ namespace Microsoft.AspNetCore.RequestLocalization
             _optionsAction = optionsAction;
         }
 
-        public RequestLocalizationOptions GetLocalizationOptions()
-        {
-            if (_requestLocalizationOptions != null)
-            {
-                return _requestLocalizationOptions;
-            }
-
-            return AsyncHelper.RunSync(GetLocalizationOptionsAsync);
-        }
-
         public async Task<RequestLocalizationOptions> GetLocalizationOptionsAsync()
         {
             if (_requestLocalizationOptions == null)
             {
-                using (await _syncSemaphore.LockAsync().ConfigureAwait(false))
+                using (await _syncSemaphore.LockAsync())
                 {
                     if (_requestLocalizationOptions == null)
                     {

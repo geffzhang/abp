@@ -1,5 +1,5 @@
 import { EventEmitter, Type } from '@angular/core';
-import { Router } from '@angular/router';
+import { Routes } from '@angular/router';
 import { Subject } from 'rxjs';
 import { eLayoutType } from '../enums/common';
 import { Environment } from './environment';
@@ -12,8 +12,9 @@ export namespace ABP {
     sendNullsAsQueryParam?: boolean;
   }
 
-  export interface Test {
-    baseHref?: Router;
+  export interface Test extends Partial<Root> {
+    baseHref?: string;
+    routes?: Routes;
   }
 
   export type PagedResponse<T> = {
