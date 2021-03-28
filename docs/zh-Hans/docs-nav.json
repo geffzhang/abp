@@ -313,7 +313,8 @@
               "path": "Module-Development-Basics.md"
             },
             {
-              "text": "模块插件"
+              "text": "模块插件",
+              "path": "PlugIn-Modules.md"
             },
             {
               "text": "自定义应用模块",
@@ -352,6 +353,10 @@
                 {
                   "text": "实体&聚合根",
                   "path": "Entities.md"
+                },
+                {
+                  "text": "多语言实体",
+                  "path": "Multi-Lingual-Entities.md"
                 },
                 {
                   "text": "值对象"

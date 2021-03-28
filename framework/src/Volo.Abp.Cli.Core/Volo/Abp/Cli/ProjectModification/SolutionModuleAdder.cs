@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Generic;
@@ -6,12 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using NuGet.Versioning;
 using Volo.Abp.Cli.Args;
-using Volo.Abp.Cli.Bundling;
 using Volo.Abp.Cli.Commands;
 using Volo.Abp.Cli.Commands.Services;
 using Volo.Abp.Cli.Http;
 using Volo.Abp.Cli.ProjectBuilding;
+using Volo.Abp.Cli.ProjectBuilding.Files;
 using Volo.Abp.Cli.ProjectBuilding.Templates.MvcModule;
 using Volo.Abp.Cli.Utils;
 using Volo.Abp.DependencyInjection;
@@ -22,15 +24,6 @@ namespace Volo.Abp.Cli.ProjectModification
     public class SolutionModuleAdder : ITransientDependency
     {
         public ILogger<SolutionModuleAdder> Logger { get; set; }
-
-        protected IJsonSerializer JsonSerializer { get; }
-        protected ProjectNugetPackageAdder ProjectNugetPackageAdder { get; }
-        protected DbContextFileBuilderConfigureAdder DbContextFileBuilderConfigureAdder { get; }
-        protected EfCoreMigrationAdder EfCoreMigrationAdder { get; }
-        protected DerivedClassFinder DerivedClassFinder { get; }
-        protected ProjectNpmPackageAdder ProjectNpmPackageAdder { get; }
-        protected NpmGlobalPackagesChecker NpmGlobalPackagesChecker { get; }
-        protected IRemoteServiceExceptionHandler RemoteServiceExceptionHandler { get; }
         public SourceCodeDownloadService SourceCodeDownloadService { get; }
         public SolutionFileModifier SolutionFileModifier { get; }
         public NugetPackageToLocalReferenceConverter NugetPackageToLocalReferenceConverter { get; }
@@ -38,11 +31,23 @@ namespace Volo.Abp.Cli.ProjectModification
         public NewCommand NewCommand { get; }
         public BundleCommand BundleCommand { get; }
 
+        protected IJsonSerializer JsonSerializer { get; }
+        protected ProjectNugetPackageAdder ProjectNugetPackageAdder { get; }
+        protected DbContextFileBuilderConfigureAdder DbContextFileBuilderConfigureAdder { get; }
+        protected EfCoreMigrationManager EfCoreMigrationManager { get; }
+        protected DerivedClassFinder DerivedClassFinder { get; }
+        protected ProjectNpmPackageAdder ProjectNpmPackageAdder { get; }
+        protected NpmGlobalPackagesChecker NpmGlobalPackagesChecker { get; }
+        protected IRemoteServiceExceptionHandler RemoteServiceExceptionHandler { get; }
+
+        private readonly CliHttpClientFactory _cliHttpClientFactory;
+
+
         public SolutionModuleAdder(
             IJsonSerializer jsonSerializer,
             ProjectNugetPackageAdder projectNugetPackageAdder,
             DbContextFileBuilderConfigureAdder dbContextFileBuilderConfigureAdder,
-            EfCoreMigrationAdder efCoreMigrationAdder,
+            EfCoreMigrationManager efCoreMigrationManager,
             DerivedClassFinder derivedClassFinder,
             ProjectNpmPackageAdder projectNpmPackageAdder,
             NpmGlobalPackagesChecker npmGlobalPackagesChecker,
@@ -52,12 +57,13 @@ namespace Volo.Abp.Cli.ProjectModification
             NugetPackageToLocalReferenceConverter nugetPackageToLocalReferenceConverter,
             AngularModuleSourceCodeAdder angularModuleSourceCodeAdder,
             NewCommand newCommand,
-            BundleCommand bundleCommand)
+            BundleCommand bundleCommand,
+            CliHttpClientFactory cliHttpClientFactory)
         {
             JsonSerializer = jsonSerializer;
             ProjectNugetPackageAdder = projectNugetPackageAdder;
             DbContextFileBuilderConfigureAdder = dbContextFileBuilderConfigureAdder;
-            EfCoreMigrationAdder = efCoreMigrationAdder;
+            EfCoreMigrationManager = efCoreMigrationManager;
             DerivedClassFinder = derivedClassFinder;
             ProjectNpmPackageAdder = projectNpmPackageAdder;
             NpmGlobalPackagesChecker = npmGlobalPackagesChecker;
@@ -68,13 +74,13 @@ namespace Volo.Abp.Cli.ProjectModification
             AngularModuleSourceCodeAdder = angularModuleSourceCodeAdder;
             NewCommand = newCommand;
             BundleCommand = bundleCommand;
+            _cliHttpClientFactory = cliHttpClientFactory;
             Logger = NullLogger<SolutionModuleAdder>.Instance;
         }
 
         public virtual async Task AddAsync(
             [NotNull] string solutionFile,
             [NotNull] string moduleName,
-            string startupProject,
             string version,
             bool skipDbMigrations = false,
             bool withSourceCode = false,
@@ -86,6 +92,7 @@ namespace Volo.Abp.Cli.ProjectModification
             Check.NotNull(moduleName, nameof(moduleName));
 
             var module = await GetModuleInfoAsync(moduleName, newTemplate, newProTemplate);
+            module = RemoveIncompatiblePackages(module, version);
 
             Logger.LogInformation(
                 $"Installing module '{module.Name}' to the solution '{Path.GetFileNameWithoutExtension(solutionFile)}'");
@@ -97,8 +104,7 @@ namespace Volo.Abp.Cli.ProjectModification
             if (withSourceCode || newTemplate || newProTemplate)
             {
                 var modulesFolderInSolution = Path.Combine(Path.GetDirectoryName(solutionFile), "modules");
-                await DownloadSourceCodesToSolutionFolder(module, modulesFolderInSolution, version, newTemplate,
-                    newProTemplate);
+                await DownloadSourceCodesToSolutionFolder(module, modulesFolderInSolution, version, newTemplate, newProTemplate);
                 await RemoveUnnecessaryProjectsAsync(Path.GetDirectoryName(solutionFile), module, projectFiles);
 
                 if (addSourceCodeToSolutionFile)
@@ -115,7 +121,7 @@ namespace Volo.Abp.Cli.ProjectModification
                     await NugetPackageToLocalReferenceConverter.Convert(module, solutionFile);
                 }
 
-                await AddAngularSourceCode(modulesFolderInSolution, solutionFile);
+                await AddAngularSourceCode(modulesFolderInSolution, solutionFile, module.Name, newTemplate || newProTemplate);
             }
             else
             {
@@ -124,14 +130,47 @@ namespace Volo.Abp.Cli.ProjectModification
 
             await RunBundleForBlazorAsync(projectFiles, module);
 
-            ModifyDbContext(projectFiles, module, startupProject, skipDbMigrations);
+            ModifyDbContext(projectFiles, module, skipDbMigrations);
+        }
+
+        private ModuleWithMastersInfo RemoveIncompatiblePackages(ModuleWithMastersInfo module, string version)
+        {
+            module.NugetPackages.RemoveAll(np => IsPackageInCompatible(np, version));
+            return module;
+        }
+
+        private bool IsPackageInCompatible(NugetPackageInfo package, string version)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(package.MinVersion))
+                {
+                    if (SemanticVersion.Parse(package.MinVersion) > SemanticVersion.Parse(version))
+                    {
+                        return true;
+                    }
+                }
+                if (!string.IsNullOrWhiteSpace(package.MaxVersion))
+                {
+                    if (SemanticVersion.Parse(package.MaxVersion) < SemanticVersion.Parse(version))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
         }
 
         private async Task RunBundleForBlazorAsync(string[] projectFiles, ModuleWithMastersInfo module)
         {
             var blazorProject = projectFiles.FirstOrDefault(f => f.EndsWith(".Blazor.csproj"));
 
-            if (blazorProject == null || !module.NugetPackages.Any(np=> np.Target == NuGetPackageTarget.Blazor))
+            if (blazorProject == null || !module.NugetPackages.Any(np => np.Target == NuGetPackageTarget.Blazor))
             {
                 return;
             }
@@ -151,9 +190,26 @@ namespace Volo.Abp.Cli.ProjectModification
             var moduleSolutionFile = Directory.GetFiles(moduleDirectory, "*.sln", SearchOption.TopDirectoryOnly).First();
             var isProjectTiered = await IsProjectTiered(projectFiles);
 
-            if (!projectFiles.Any(p => p.EndsWith(".Blazor.csproj")))
+            var blazorProject = projectFiles.FirstOrDefault(p => p.EndsWith(".Blazor.csproj"));
+            if (blazorProject == null)
             {
                 await RemoveProjectByTarget(module, moduleSolutionFile, NuGetPackageTarget.Blazor, isProjectTiered);
+                await RemoveProjectByTarget(module, moduleSolutionFile, NuGetPackageTarget.BlazorServer, isProjectTiered);
+                await RemoveProjectByTarget(module, moduleSolutionFile, NuGetPackageTarget.BlazorWebAssembly, isProjectTiered);
+                await RemoveProjectByPostFix(module, moduleSolutionFile, "src", ".Blazor");
+            }
+            else
+            {
+                var isBlazorServer = BlazorProjectTypeChecker.IsBlazorServerProject(blazorProject);
+
+                if (isBlazorServer)
+                {
+                    await RemoveProjectByTarget(module, moduleSolutionFile, NuGetPackageTarget.BlazorWebAssembly, isProjectTiered);
+                }
+                else
+                {
+                    await RemoveProjectByTarget(module, moduleSolutionFile, NuGetPackageTarget.BlazorServer, isProjectTiered);
+                }
             }
 
             if (!projectFiles.Any(p => p.EndsWith(".Web.csproj")))
@@ -171,7 +227,8 @@ namespace Volo.Abp.Cli.ProjectModification
             {
                 await RemoveProjectByTarget(module, moduleSolutionFile, NuGetPackageTarget.EntityFrameworkCore, isProjectTiered);
                 await RemoveProjectByPostFix(module, moduleSolutionFile, "test", ".EntityFrameworkCore.Tests");
-                await ChangeDomainTestReferenceToMongoDB(module, moduleSolutionFile);
+                await RemoveProjectByPostFix(module, moduleSolutionFile, "test", ".Application.Tests");
+                ChangeDomainTestReferenceToMongoDB(module, moduleSolutionFile);
             }
         }
 
@@ -205,17 +262,26 @@ namespace Volo.Abp.Cli.ProjectModification
             string postFix)
         {
             var srcPath = Path.Combine(Path.GetDirectoryName(moduleSolutionFile), targetFolder);
-            var projectFolderPath = Directory.GetDirectories(srcPath).FirstOrDefault(d=> d.EndsWith(postFix));
-            await SolutionFileModifier.RemoveProjectFromSolutionFileAsync(moduleSolutionFile, new DirectoryInfo(projectFolderPath).Name);
 
-            if (Directory.Exists(projectFolderPath))
+            if (!Directory.Exists(srcPath))
             {
-                Directory.Delete(projectFolderPath, true);
+                return;
             }
 
+            var projectFolderPaths = Directory.GetDirectories(srcPath).Where(d => d.EndsWith(postFix)).ToList();
+
+            foreach (var projectFolderPath in projectFolderPaths)
+            {
+                await SolutionFileModifier.RemoveProjectFromSolutionFileAsync(moduleSolutionFile, new DirectoryInfo(projectFolderPath).Name);
+
+                if (Directory.Exists(projectFolderPath))
+                {
+                    Directory.Delete(projectFolderPath, true);
+                }
+            }
         }
 
-        private async Task ChangeDomainTestReferenceToMongoDB(ModuleWithMastersInfo module, string moduleSolutionFile)
+        private void ChangeDomainTestReferenceToMongoDB(ModuleWithMastersInfo module, string moduleSolutionFile)
         {
             var testPath = Path.Combine(Path.GetDirectoryName(moduleSolutionFile), "test");
 
@@ -224,25 +290,25 @@ namespace Volo.Abp.Cli.ProjectModification
                 return;
             }
 
-            var projectFolderPath = Directory.GetDirectories(testPath).FirstOrDefault(d=> d.EndsWith("Domain.Tests"));
+            var projectFolderPath = Directory.GetDirectories(testPath).FirstOrDefault(d => d.EndsWith("Domain.Tests"));
 
             if (projectFolderPath == null)
             {
                 return;
             }
 
-            var csprojFile = Directory.GetFiles(projectFolderPath).FirstOrDefault(p => p.EndsWith(".csproj"));
-            var moduleFile = Directory.GetFiles(projectFolderPath).FirstOrDefault(p => p.EndsWith("DomainTestModule.cs"));
+            var csprojFile = Directory.GetFiles(projectFolderPath, "*.csproj", SearchOption.AllDirectories).FirstOrDefault();
+            var moduleFile = Directory.GetFiles(projectFolderPath, "*DomainTestModule.cs", SearchOption.AllDirectories).FirstOrDefault();
 
             if (csprojFile == null || moduleFile == null)
             {
                 return;
             }
 
-            File.WriteAllText(csprojFile, File.ReadAllText(csprojFile).Replace("EntityFrameworkCore","MongoDB"));
+            File.WriteAllText(csprojFile, File.ReadAllText(csprojFile).Replace("EntityFrameworkCore", "MongoDB"));
             File.WriteAllText(moduleFile, File.ReadAllText(moduleFile)
-                .Replace(".EntityFrameworkCore;",".MongoDB;")
-                .Replace("EntityFrameworkCoreTestModule","MongoDbTestModule"));
+                .Replace(".EntityFrameworkCore;", ".MongoDB;")
+                .Replace("EntityFrameworkCoreTestModule", "MongoDbTestModule"));
         }
 
         private async Task AddAngularPackages(string solutionFilePath, ModuleWithMastersInfo module)
@@ -266,7 +332,7 @@ namespace Volo.Abp.Cli.ProjectModification
             }
         }
 
-        private async Task AddAngularSourceCode(string modulesFolderInSolution, string solutionFilePath)
+        private async Task AddAngularSourceCode(string modulesFolderInSolution, string solutionFilePath, string moduleName, bool newTemplate)
         {
             var angularPath = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(solutionFilePath)), "angular");
 
@@ -274,6 +340,11 @@ namespace Volo.Abp.Cli.ProjectModification
             {
                 DeleteAngularDirectoriesInModulesFolder(modulesFolderInSolution);
                 return;
+            }
+
+            if (newTemplate)
+            {
+                MoveAngularFolderInNewTemplate(modulesFolderInSolution, moduleName);
             }
 
             await AngularModuleSourceCodeAdder.AddAsync(solutionFilePath, angularPath);
@@ -293,6 +364,30 @@ namespace Volo.Abp.Cli.ProjectModification
             }
         }
 
+        private static void MoveAngularFolderInNewTemplate(string modulesFolderInSolution, string moduleName)
+        {
+            var moduleAngularFolder = Path.Combine(modulesFolderInSolution, moduleName, "angular");
+
+            if (!Directory.Exists(moduleAngularFolder))
+            {
+                return;
+            }
+
+            var files = Directory.GetFiles(moduleAngularFolder);
+            var folders = Directory.GetDirectories(moduleAngularFolder);
+
+            Directory.CreateDirectory(Path.Combine(moduleAngularFolder, moduleName));
+
+            foreach (var file in files)
+            {
+                File.Move(file, Path.Combine(moduleAngularFolder, moduleName, Path.GetFileName(file)));
+            }
+            foreach (var folder in folders)
+            {
+                Directory.Move(folder, Path.Combine(moduleAngularFolder, moduleName, Path.GetFileName(folder)));
+            }
+        }
+
         private async Task DownloadSourceCodesToSolutionFolder(ModuleWithMastersInfo module,
             string modulesFolderInSolution, string version = null, bool newTemplate = false,
             bool newProTemplate = false)
@@ -305,7 +400,7 @@ namespace Volo.Abp.Cli.ProjectModification
             }
             else
             {
-                await SourceCodeDownloadService.DownloadAsync(
+                await SourceCodeDownloadService.DownloadModuleAsync(
                     module.Name,
                     targetModuleFolder,
                     version,
@@ -315,9 +410,9 @@ namespace Volo.Abp.Cli.ProjectModification
                 );
             }
 
-            await DeleteRedundantHostProjects(targetModuleFolder,"app");
-            await DeleteRedundantHostProjects(targetModuleFolder,"demo");
-            await DeleteRedundantHostProjects(targetModuleFolder,"host");
+            await DeleteRedundantHostProjects(targetModuleFolder, "app");
+            await DeleteRedundantHostProjects(targetModuleFolder, "demo");
+            await DeleteRedundantHostProjects(targetModuleFolder, "host");
 
             if (module.MasterModuleInfos == null)
             {
@@ -378,7 +473,7 @@ namespace Volo.Abp.Cli.ProjectModification
                     continue;
                 }
 
-                await ProjectNugetPackageAdder.AddAsync(targetProjectFile, nugetPackage, null, useDotnetCliToInstall);
+                await ProjectNugetPackageAdder.AddAsync(null, targetProjectFile, nugetPackage, null, useDotnetCliToInstall);
             }
 
             var mvcNpmPackages = module.NpmPackages?.Where(p => p.ApplicationType.HasFlag(NpmApplicationType.Mvc))
@@ -406,8 +501,7 @@ namespace Volo.Abp.Cli.ProjectModification
             }
         }
 
-        protected void ModifyDbContext(string[] projectFiles, ModuleInfo module, string startupProject,
-            bool skipDbMigrations = false)
+        protected void ModifyDbContext(string[] projectFiles, ModuleInfo module, bool skipDbMigrations = false)
         {
             if (string.IsNullOrWhiteSpace(module.EfCoreConfigureMethodName))
             {
@@ -417,11 +511,6 @@ namespace Volo.Abp.Cli.ProjectModification
                 }
 
                 return;
-            }
-
-            if (string.IsNullOrWhiteSpace(startupProject))
-            {
-                startupProject = projectFiles.FirstOrDefault(p => p.EndsWith(".DbMigrator.csproj"));
             }
 
             var dbMigrationsProject = projectFiles.FirstOrDefault(p => p.EndsWith(".DbMigrations.csproj"));
@@ -454,14 +543,14 @@ namespace Volo.Abp.Cli.ProjectModification
             {
                 if (addedNewBuilder)
                 {
-                    EfCoreMigrationAdder.AddMigration(dbMigrationsProject, module.Name, startupProject);
+                    EfCoreMigrationManager.AddMigration(dbMigrationsProject, module.Name);
                 }
 
                 RunMigrator(projectFiles);
             }
         }
 
-        protected virtual async Task RunMigrator(string[] projectFiles)
+        protected virtual void RunMigrator(string[] projectFiles)
         {
             var dbMigratorProject = projectFiles.FirstOrDefault(p => p.EndsWith(".DbMigrator.csproj"));
 
@@ -476,15 +565,14 @@ namespace Volo.Abp.Cli.ProjectModification
         {
             if (newTemplate || newProTemplate)
             {
-                return await GetEmptyModuleProjectInfoAsync(moduleName, newProTemplate);
+                return GetEmptyModuleProjectInfo(moduleName, newProTemplate);
             }
 
-            using (var client = new CliHttpClient())
+            var url = $"{CliUrls.WwwAbpIo}api/app/module/byNameWithDetails/?name=" + moduleName;
+            var client = _cliHttpClientFactory.CreateClient();
+
+            using (var response = await client.GetAsync(url, _cliHttpClientFactory.GetCancellationToken()))
             {
-                var url = $"{CliUrls.WwwAbpIo}api/app/module/byNameWithDetails/?name=" + moduleName;
-
-                var response = await client.GetAsync(url);
-
                 if (!response.IsSuccessStatusCode)
                 {
                     if (response.StatusCode == HttpStatusCode.NotFound)
@@ -500,7 +588,7 @@ namespace Volo.Abp.Cli.ProjectModification
             }
         }
 
-        private async Task<ModuleWithMastersInfo> GetEmptyModuleProjectInfoAsync(string moduleName,
+        private ModuleWithMastersInfo GetEmptyModuleProjectInfo(string moduleName,
             bool newProTemplate = false)
         {
             var module = new ModuleWithMastersInfo
@@ -529,9 +617,15 @@ namespace Volo.Abp.Cli.ProjectModification
                 },
                 new NugetPackageInfo
                 {
-                    Name = $"{module.Name}.Blazor",
-                    ModuleClass = $"{module.Name}.Blazor.{moduleProjectName}BlazorModule",
-                    Target = NuGetPackageTarget.Blazor
+                    Name = $"{module.Name}.Blazor.WebAssembly",
+                    ModuleClass = $"{module.Name}.Blazor.{moduleProjectName}BlazorWebAssemblyModule",
+                    Target = NuGetPackageTarget.BlazorWebAssembly
+                },
+                new NugetPackageInfo
+                {
+                    Name = $"{module.Name}.Blazor.Server",
+                    ModuleClass = $"{module.Name}.Blazor.{moduleProjectName}BlazorServerModule",
+                    Target = NuGetPackageTarget.BlazorServer
                 },
                 new NugetPackageInfo
                 {
@@ -585,7 +679,7 @@ namespace Volo.Abp.Cli.ProjectModification
         protected virtual async Task<bool> IsProjectTiered(string[] projectFiles)
         {
             return projectFiles.Select(ProjectFileNameHelper.GetAssemblyNameFromProjectPath)
-                .Any(p =>p.EndsWith(".HttpApi.Host"))
+                .Any(p => p.EndsWith(".HttpApi.Host"))
                 && projectFiles.Select(ProjectFileNameHelper.GetAssemblyNameFromProjectPath)
                 .Any(p => p.EndsWith(".IdentityServer"));
         }

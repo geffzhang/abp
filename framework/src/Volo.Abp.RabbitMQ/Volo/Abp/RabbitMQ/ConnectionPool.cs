@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
@@ -10,28 +11,30 @@ namespace Volo.Abp.RabbitMQ
     {
         protected AbpRabbitMqOptions Options { get; }
 
-        protected ConcurrentDictionary<string, IConnection> Connections { get; }
+        protected ConcurrentDictionary<string, Lazy<IConnection>> Connections { get; }
 
         private bool _isDisposed;
 
         public ConnectionPool(IOptions<AbpRabbitMqOptions> options)
         {
             Options = options.Value;
-            Connections = new ConcurrentDictionary<string, IConnection>();
+            Connections = new ConcurrentDictionary<string, Lazy<IConnection>>();
         }
 
         public virtual IConnection Get(string connectionName = null)
         {
-            connectionName = connectionName
-                             ?? RabbitMqConnections.DefaultConnectionName;
+            connectionName ??= RabbitMqConnections.DefaultConnectionName;
 
             return Connections.GetOrAdd(
-                connectionName,
-                () => Options
-                    .Connections
-                    .GetOrDefault(connectionName)
-                    .CreateConnection()
-            );
+                connectionName, () => new Lazy<IConnection>(() =>
+                {
+                    var connection = Options.Connections.GetOrDefault(connectionName);
+                    var hostnames = connection.HostName.TrimEnd(';').Split(';');
+                    // Handle Rabbit MQ Cluster.
+                    return hostnames.Length == 1 ? connection.CreateConnection() : connection.CreateConnection(hostnames);
+
+                })
+            ).Value;
         }
 
         public void Dispose()
@@ -47,7 +50,7 @@ namespace Volo.Abp.RabbitMQ
             {
                 try
                 {
-                    connection.Dispose();
+                    connection.Value.Dispose();
                 }
                 catch
                 {

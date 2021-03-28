@@ -38,16 +38,11 @@ namespace Volo.Abp.Cli.Commands
             }
 
             var newTemplate = commandLineArgs.Options.ContainsKey(Options.NewTemplate.Long);
-
             var template = commandLineArgs.Options.GetOrNull(Options.Template.Short, Options.Template.Long);
             var newProTemplate = !string.IsNullOrEmpty(template) && template == ModuleProTemplate.TemplateName;
-
             var withSourceCode = newTemplate || newProTemplate || commandLineArgs.Options.ContainsKey(Options.SourceCode.Long);
             var addSourceCodeToSolutionFile = withSourceCode && commandLineArgs.Options.ContainsKey("add-to-solution-file");
-
-            var skipDbMigrations = newTemplate || newProTemplate || Convert.ToBoolean(
-                commandLineArgs.Options.GetOrNull(Options.DbMigrations.Skip) ?? "false");
-
+            var skipDbMigrations = newTemplate || newProTemplate || Convert.ToBoolean(commandLineArgs.Options.GetOrNull(Options.DbMigrations.Skip) ?? "false");
             var solutionFile = GetSolutionFile(commandLineArgs);
 
             var version = commandLineArgs.Options.GetOrNull(Options.Version.Short, Options.Version.Long);
@@ -59,7 +54,6 @@ namespace Volo.Abp.Cli.Commands
             await SolutionModuleAdder.AddAsync(
                 solutionFile,
                 commandLineArgs.Target,
-                commandLineArgs.Options.GetOrNull(Options.StartupProject.Short, Options.StartupProject.Long),
                 version,
                 skipDbMigrations,
                 withSourceCode,
@@ -81,11 +75,11 @@ namespace Volo.Abp.Cli.Commands
             sb.AppendLine("  abp add-module <module-name> [options]");
             sb.AppendLine("");
             sb.AppendLine("Options:");
-            sb.AppendLine("  --new-template                                  Creates a fresh new module (speсialized for your solution) and adds it your solution.");
-            sb.AppendLine("  --with-source-code                              Downloads the source code of the module to your solution folder. (Always True if `--new-template` is used.)");
+            sb.AppendLine("  --new                                           Creates a fresh new module (speсialized for your solution) and adds it your solution.");
+            sb.AppendLine("  --with-source-code                              Downloads the source code of the module to your solution folder. (Always True if `--new` is used.)");
             sb.AppendLine("  --add-to-solution-file                          Adds the downloaded/created module to your solution file. (only available when --with-source-code used)");
             sb.AppendLine("  -s|--solution <solution-file>                   Specify the solution file explicitly.");
-            sb.AppendLine("  --skip-db-migrations <boolean>                  Specify if a new migration will be added or not.  (Always True if `--new-template` is used.)");
+            sb.AppendLine("  --skip-db-migrations <boolean>                  Specify if a new migration will be added or not.  (Always True if `--new` is used.)");
             sb.AppendLine("  -sp|--startup-project <startup-project-path>    Relative path to the project folder of the startup project. Default value is the current folder.");
             sb.AppendLine("  -v|--version <version>                          Specify the version of the module. Default is your project's ABP version.");
             sb.AppendLine("");
@@ -165,12 +159,6 @@ namespace Volo.Abp.Cli.Commands
             public static class DbMigrations
             {
                 public const string Skip = "skip-db-migrations";
-            }
-
-            public static class StartupProject
-            {
-                public const string Short = "sp";
-                public const string Long = "startup-project";
             }
 
             public static class SourceCode

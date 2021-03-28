@@ -11,7 +11,6 @@ import { ReplaceableRouteContainerComponent } from './components/replaceable-rou
 import { RouterOutletComponent } from './components/router-outlet.component';
 import { AutofocusDirective } from './directives/autofocus.directive';
 import { InputEventDebounceDirective } from './directives/debounce.directive';
-import { EllipsisDirective } from './directives/ellipsis.directive';
 import { ForDirective } from './directives/for.directive';
 import { FormSubmitDirective } from './directives/form-submit.directive';
 import { InitDirective } from './directives/init.directive';
@@ -52,11 +51,10 @@ export function storageFactory(): OAuthStorage {
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
-
+    LocalizationModule,
     AbstractNgModelComponent,
     AutofocusDirective,
     DynamicLayoutComponent,
-    EllipsisDirective,
     ForDirective,
     FormSubmitDirective,
     InitDirective,
@@ -76,12 +74,12 @@ export function storageFactory(): OAuthStorage {
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
+    LocalizationModule,
   ],
   declarations: [
     AbstractNgModelComponent,
     AutofocusDirective,
     DynamicLayoutComponent,
-    EllipsisDirective,
     ForDirective,
     FormSubmitDirective,
     InitDirective,
@@ -94,6 +92,7 @@ export function storageFactory(): OAuthStorage {
     StopPropagationDirective,
     VisibilityDirective,
   ],
+  providers: [LocalizationPipe],
   entryComponents: [
     RouterOutletComponent,
     DynamicLayoutComponent,
@@ -125,9 +124,8 @@ export class RootCoreModule {}
  * CoreModule is the module that is publicly available
  */
 @NgModule({
-  exports: [BaseCoreModule, LocalizationModule],
-  imports: [BaseCoreModule, LocalizationModule],
-  providers: [LocalizationPipe],
+  exports: [BaseCoreModule],
+  imports: [BaseCoreModule],
 })
 export class CoreModule {
   static forRoot(options = {} as ABP.Root): ModuleWithProviders<RootCoreModule> {

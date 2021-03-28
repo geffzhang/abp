@@ -1,6 +1,10 @@
-import { AuthService, ConfigStateService, CurrentUserDto, EnvironmentService } from '@abp/ng.core';
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import {
+  AuthService,
+  ConfigStateService,
+  CurrentUserDto,
+  NAVIGATE_TO_MANAGE_PROFILE,
+} from '@abp/ng.core';
+import { Component, Inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -8,7 +12,7 @@ import { Observable } from 'rxjs';
   // tslint:disable-next-line: component-max-inline-declarations
   template: `
     <ng-template #loginBtn>
-      <a role="button" class="nav-link pointer" (click)="initLogin()">{{
+      <a role="button" class="nav-link pointer" (click)="navigateToLogin()">{{
         'AbpAccount::Login' | abpLocalization
       }}</a>
     </ng-template>
@@ -36,7 +40,7 @@ import { Observable } from 'rxjs';
         aria-labelledby="dropdownMenuLink"
         [class.d-block]="smallScreen && currentUserDropdown.isOpen()"
       >
-        <a class="dropdown-item" [href]="manageProfileUrl"
+        <a class="dropdown-item pointer" (click)="navigateToManageProfile()"
           ><i class="fa fa-cog mr-1"></i>{{ 'AbpAccount::ManageYourProfile' | abpLocalization }}</a
         >
         <a class="dropdown-item" href="javascript:void(0)" (click)="logout()"
@@ -53,26 +57,17 @@ export class CurrentUserComponent {
     return window.innerWidth < 992;
   }
 
-  get manageProfileUrl() {
-    return `${this.environment.getEnvironment().oAuthConfig.issuer}/Account/Manage?returnUrl=${
-      window.location.href
-    }`;
-  }
-
   constructor(
+    @Inject(NAVIGATE_TO_MANAGE_PROFILE) public navigateToManageProfile,
     private authService: AuthService,
-    private router: Router,
     private configState: ConfigStateService,
-    private environment: EnvironmentService,
   ) {}
 
-  initLogin() {
-    this.authService.initLogin();
+  navigateToLogin() {
+    this.authService.navigateToLogin();
   }
 
   logout() {
-    this.authService.logout().subscribe(() => {
-      this.router.navigate(['/'], { state: { redirectUrl: this.router.url } });
-    });
+    this.authService.logout().subscribe();
   }
 }

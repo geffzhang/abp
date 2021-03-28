@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Volo.Abp.Data;
@@ -19,21 +20,23 @@ namespace Volo.Abp.Domain.Repositories
         IUnitOfWorkEnabled
         where TEntity : class, IEntity
     {
+        public IAbpLazyServiceProvider LazyServiceProvider { get; set; }
+
         public IServiceProvider ServiceProvider { get; set; }
 
-        public IDataFilter DataFilter { get; set; }
+        public IDataFilter DataFilter => LazyServiceProvider.LazyGetRequiredService<IDataFilter>();
 
-        public ICurrentTenant CurrentTenant { get; set; }
+        public ICurrentTenant CurrentTenant => LazyServiceProvider.LazyGetRequiredService<ICurrentTenant>();
 
-        public IAsyncQueryableExecuter AsyncExecuter { get; set; }
+        public IAsyncQueryableExecuter AsyncExecuter => LazyServiceProvider.LazyGetRequiredService<IAsyncQueryableExecuter>();
 
-        public IUnitOfWorkManager UnitOfWorkManager { get; set; }
+        public IUnitOfWorkManager UnitOfWorkManager => LazyServiceProvider.LazyGetRequiredService<IUnitOfWorkManager>();
 
-        public ICancellationTokenProvider CancellationTokenProvider { get; set; }
+        public ICancellationTokenProvider CancellationTokenProvider => LazyServiceProvider.LazyGetService<ICancellationTokenProvider>(NullCancellationTokenProvider.Instance);
 
         protected BasicRepositoryBase()
         {
-            CancellationTokenProvider = NullCancellationTokenProvider.Instance;
+
         }
 
         public abstract Task<TEntity> InsertAsync(TEntity entity, bool autoSave = false, CancellationToken cancellationToken = default);
@@ -92,6 +95,8 @@ namespace Volo.Abp.Domain.Repositories
         }
 
         public abstract Task<List<TEntity>> GetListAsync(bool includeDetails = false, CancellationToken cancellationToken = default);
+
+        public abstract Task<List<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> predicate, bool includeDetails = false, CancellationToken cancellationToken = default);
 
         public abstract Task<long> GetCountAsync(CancellationToken cancellationToken = default);
 
