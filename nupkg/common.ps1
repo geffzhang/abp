@@ -19,7 +19,8 @@ $solutions = (
     "modules/tenant-management",
     "modules/users",
     "modules/virtual-file-explorer",
-    "modules/blob-storing-database"
+    "modules/blob-storing-database",
+    "modules/cms-kit"
 )
 
 # List of projects
@@ -62,6 +63,7 @@ $projects = (
     "framework/src/Volo.Abp.AspNetCore.TestBase",
     "framework/src/Volo.Abp.Auditing",
     "framework/src/Volo.Abp.Authorization",
+    "framework/src/Volo.Abp.Authorization.Abstractions",
     "framework/src/Volo.Abp.Autofac",
     "framework/src/Volo.Abp.Autofac.WebAssembly",
     "framework/src/Volo.Abp.AutoMapper",
@@ -137,7 +139,10 @@ $projects = (
     "framework/src/Volo.Abp.Sms.Aliyun",
     "framework/src/Volo.Abp.Specifications",
     "framework/src/Volo.Abp.TestBase",
+    "framework/src/Volo.Abp.TextTemplating.Abstractions",
     "framework/src/Volo.Abp.TextTemplating",
+    "framework/src/Volo.Abp.TextTemplating.Razor",
+    "framework/src/Volo.Abp.TextTemplating.Scriban",
     "framework/src/Volo.Abp.Threading",
     "framework/src/Volo.Abp.Timing",
     "framework/src/Volo.Abp.UI",
@@ -300,5 +305,31 @@ $projects = (
     "modules/blob-storing-database/src/Volo.Abp.BlobStoring.Database.Domain",
     "modules/blob-storing-database/src/Volo.Abp.BlobStoring.Database.Domain.Shared",
     "modules/blob-storing-database/src/Volo.Abp.BlobStoring.Database.EntityFrameworkCore",
-    "modules/blob-storing-database/src/Volo.Abp.BlobStoring.Database.MongoDB"
+    "modules/blob-storing-database/src/Volo.Abp.BlobStoring.Database.MongoDB",
+	
+    # abp/cms-kit	
+    "modules/cms-kit/src/Volo.CmsKit.Admin.Application",
+    "modules/cms-kit/src/Volo.CmsKit.Admin.Application.Contracts",
+    "modules/cms-kit/src/Volo.CmsKit.Admin.HttpApi",
+    "modules/cms-kit/src/Volo.CmsKit.Admin.HttpApi.Client",
+    "modules/cms-kit/src/Volo.CmsKit.Admin.Web",
+    "modules/cms-kit/src/Volo.CmsKit.Application",
+    "modules/cms-kit/src/Volo.CmsKit.Application.Contracts",
+    "modules/cms-kit/src/Volo.CmsKit.Common.Application",
+    "modules/cms-kit/src/Volo.CmsKit.Common.Application.Contracts",
+    "modules/cms-kit/src/Volo.CmsKit.Common.HttpApi",
+    "modules/cms-kit/src/Volo.CmsKit.Common.HttpApi.Client",
+    "modules/cms-kit/src/Volo.CmsKit.Common.Web",
+    "modules/cms-kit/src/Volo.CmsKit.Domain",
+    "modules/cms-kit/src/Volo.CmsKit.Domain.Shared",
+    "modules/cms-kit/src/Volo.CmsKit.EntityFrameworkCore",
+    "modules/cms-kit/src/Volo.CmsKit.HttpApi",
+    "modules/cms-kit/src/Volo.CmsKit.HttpApi.Client",
+    "modules/cms-kit/src/Volo.CmsKit.MongoDB",
+    "modules/cms-kit/src/Volo.CmsKit.Public.Application",
+    "modules/cms-kit/src/Volo.CmsKit.Public.Application.Contracts",
+    "modules/cms-kit/src/Volo.CmsKit.Public.HttpApi",
+    "modules/cms-kit/src/Volo.CmsKit.Public.HttpApi.Client",
+    "modules/cms-kit/src/Volo.CmsKit.Public.Web",
+    "modules/cms-kit/src/Volo.CmsKit.Web"
 )
